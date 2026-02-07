@@ -276,6 +276,76 @@ function detectAccessBlock({ title, text }) {
   return false;
 }
 
+const AUTH_STRONG_PHRASES = [
+  "sign in to continue",
+  "log in to continue",
+  "login to continue",
+  "subscribe to continue",
+  "subscriber-only",
+  "subscribers only",
+  "members only",
+  "member-only",
+  "create an account to continue",
+  "start your subscription",
+  "already a subscriber"
+];
+
+const AUTH_WEAK_PHRASES = [
+  "sign in",
+  "log in",
+  "login",
+  "subscribe",
+  "subscription",
+  "register",
+  "join now",
+  "unlock this article",
+  "premium content",
+  "paywall"
+];
+
+function countPhraseHits(text, phrases) {
+  const s = String(text || "").toLowerCase();
+  if (!s) return 0;
+  let hits = 0;
+  for (const p of phrases) {
+    if (s.includes(p)) hits += 1;
+  }
+  return hits;
+}
+
+function detectAuthWall({ doc, title, pageText, articleText, candidateCount, paragraphCount }) {
+  let score = 0;
+
+  const passwordInputs = doc.querySelectorAll("input[type='password']").length;
+  const loginForms = doc.querySelectorAll(
+    "form[action*='login' i], form[id*='login' i], form[class*='login' i], form[action*='signin' i], form[action*='sign-in' i]"
+  ).length;
+  const paywallHints = doc.querySelectorAll(
+    "[class*='paywall' i], [id*='paywall' i], [class*='subscriber' i], [id*='subscriber' i], [class*='metered' i], [id*='metered' i]"
+  ).length;
+
+  if (passwordInputs > 0) score += 4;
+  if (loginForms > 0) score += 2;
+  if (paywallHints > 0) score += 3;
+
+  const strongHits = countPhraseHits(`${title}\n${pageText}`, AUTH_STRONG_PHRASES);
+  const weakHits = countPhraseHits(`${title}\n${pageText}`, AUTH_WEAK_PHRASES);
+  score += Math.min(strongHits * 2, 6);
+  score += Math.min(weakHits, 4);
+
+  const articleLooksThin =
+    Number(candidateCount || 0) <= 1 ||
+    Number(paragraphCount || 0) <= 1 ||
+    String(articleText || "").length < 320;
+  if (articleLooksThin) score += 1;
+
+  const required = score >= 6 || (score >= 4 && articleLooksThin);
+  return {
+    required,
+    score
+  };
+}
+
 export async function extractRelevantArticle({
   input,
   query,
@@ -367,6 +437,8 @@ export async function extractRelevantArticle({
 
   const best = ranked.ranked[0] || { text: deDuped[0], score: 0 };
   const articleText = stripTagsAndWhitespace(best.text || "");
+  const paragraphCount = splitParagraphs(articleText).length;
+  const pageText = stripTagsAndWhitespace(dom.window.document.body?.textContent || body);
   const passages = createRelevantPassages(
     articleText,
     ranked.ranked,
@@ -376,6 +448,27 @@ export async function extractRelevantArticle({
     title: readability?.title || titleFromDom || "",
     text: articleText
   });
+  const auth = detectAuthWall({
+    doc: dom.window.document,
+    title: readability?.title || titleFromDom || "",
+    pageText,
+    articleText,
+    candidateCount: deDuped.length,
+    paragraphCount
+  });
+
+  const accessWarning =
+    blocked && src.sourceType === "url"
+      ? IS_VERCEL_RUNTIME
+        ? "Remote site returned an anti-bot/access-block page. This host may block datacenter traffic; paste raw article HTML/text for full extraction."
+        : "Remote site returned an anti-bot/access-block page. Paste the raw article HTML/text to extract the real content."
+      : null;
+
+  const authWarning = auth.required
+    ? "Page appears to require login/subscription. Open it while signed in, then use Browser Capture to send the real page source."
+    : null;
+
+  const warning = [accessWarning, authWarning].filter(Boolean).join(" ");
 
   return {
     ok: true,
@@ -387,16 +480,12 @@ export async function extractRelevantArticle({
     byline: readability?.byline || "",
     excerpt: readability?.excerpt || "",
     articleText,
-    paragraphCount: splitParagraphs(articleText).length,
+    paragraphCount,
     relevantPassages: passages,
     candidatesAnalyzed: deDuped.length,
     blocked,
-    warning:
-      blocked && src.sourceType === "url"
-        ? IS_VERCEL_RUNTIME
-          ? "Remote site returned an anti-bot/access-block page. This host may block datacenter traffic; paste raw article HTML/text for full extraction."
-          : "Remote site returned an anti-bot/access-block page. Paste the raw article HTML/text to extract the real content."
-        : null,
+    authRequired: auth.required,
+    warning: warning || null,
     ranking: {
       method: ranked.method,
       model: ranked.model || null,

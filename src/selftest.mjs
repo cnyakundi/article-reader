@@ -44,4 +44,38 @@ if (!Array.isArray(result.relevantPassages) || result.relevantPassages.length ==
   throw new Error("selftest_failed:no_relevant_passages");
 }
 
+const loginWallHtml = `
+<!doctype html>
+<html>
+  <head><title>Sign in to continue</title></head>
+  <body>
+    <main>
+      <h1>Sign in to continue reading</h1>
+      <p>This is subscriber-only content.</p>
+      <form action="/login">
+        <input type="email" name="email" />
+        <input type="password" name="password" />
+      </form>
+    </main>
+  </body>
+</html>
+`;
+
+const authResult = await extractRelevantArticle({
+  input: loginWallHtml,
+  query: "article"
+});
+
+if (!authResult.ok) {
+  throw new Error(`selftest_failed:auth_case_failed:${authResult.error || "unknown"}`);
+}
+
+if (!authResult.authRequired) {
+  throw new Error("selftest_failed:auth_not_detected");
+}
+
+if (!String(authResult.warning || "").toLowerCase().includes("login")) {
+  throw new Error("selftest_failed:auth_warning_missing");
+}
+
 process.stdout.write("selftest_ok\n");
