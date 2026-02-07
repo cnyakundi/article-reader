@@ -4,145 +4,471 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ArticleReader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
-        --bg: #f4f6f8;
+        --bg: #f5f7fb;
+        --ink: #111827;
+        --muted: #566178;
+        --line: #d7dfec;
         --panel: #ffffff;
-        --text: #0f172a;
-        --muted: #475569;
-        --line: #dbe2ea;
-        --brand: #0a7f5a;
+        --soft: #eef2f9;
+        --brand: #0e7b5f;
+        --brand-ink: #0a5f49;
+        --danger: #b42318;
       }
-      * { box-sizing: border-box; }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
-        font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-        color: var(--text);
-        background: radial-gradient(circle at top right, #e7f5ef 0%, var(--bg) 50%);
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(70rem 36rem at -10% -20%, #d9eef2 0%, transparent 60%),
+          radial-gradient(54rem 32rem at 110% -10%, #dcece6 0%, transparent 62%),
+          var(--bg);
       }
-      .wrap {
-        max-width: 960px;
-        margin: 0 auto;
-        padding: 28px 16px 40px;
+
+      .shell {
+        width: min(1180px, 100% - 2rem);
+        margin: 2.5rem auto;
       }
-      .panel {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 16px;
+
+      .topbar {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.2rem;
       }
+
       h1 {
-        margin: 0 0 12px;
-        font-size: 28px;
+        margin: 0;
+        font-family: "Sora", "IBM Plex Sans", sans-serif;
+        font-size: clamp(1.8rem, 3vw, 2.4rem);
+        font-weight: 700;
+        letter-spacing: -0.02em;
       }
-      .sub {
+
+      .subtitle {
+        margin: 0.35rem 0 0;
         color: var(--muted);
-        margin: 0 0 16px;
-        font-size: 14px;
       }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid #cae5dc;
+        border-radius: 999px;
+        background: #ecf9f4;
+        color: var(--brand-ink);
+        padding: 0.45rem 0.8rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .dot {
+        width: 0.55rem;
+        height: 0.55rem;
+        border-radius: 50%;
+        background: var(--brand);
+        box-shadow: 0 0 0 0.2rem rgba(14, 123, 95, 0.15);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 1rem;
+      }
+
+      .card {
+        background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+        border: 1px solid var(--line);
+        border-radius: 1rem;
+        box-shadow: 0 20px 45px -30px rgba(20, 36, 69, 0.3);
+      }
+
+      .section {
+        padding: 1rem;
+      }
+
+      .section + .section {
+        border-top: 1px solid var(--soft);
+      }
+
+      .card-title {
+        margin: 0 0 0.35rem;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .card-note {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
       label {
         display: block;
-        margin: 10px 0 6px;
-        font-size: 13px;
-        font-weight: 600;
+        margin: 0 0 0.5rem;
+        font-size: 0.8rem;
+        letter-spacing: 0.02em;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #334155;
       }
-      textarea, input {
+
+      textarea,
+      input {
         width: 100%;
         border: 1px solid var(--line);
-        border-radius: 10px;
-        padding: 10px 12px;
-        font-size: 14px;
-        background: #fff;
+        border-radius: 0.8rem;
+        background: #ffffff;
+        font: inherit;
+        color: var(--ink);
+        outline: none;
+        transition: border-color 0.18s ease, box-shadow 0.18s ease;
       }
-      textarea { min-height: 92px; resize: vertical; }
-      .row {
-        display: grid;
-        grid-template-columns: 1fr 140px;
-        gap: 10px;
-      }
-      button {
-        border: none;
-        border-radius: 10px;
-        background: var(--brand);
-        color: #fff;
-        font-weight: 700;
-        font-size: 14px;
-        padding: 10px 14px;
-        cursor: pointer;
-      }
-      button:disabled { opacity: .6; cursor: default; }
-      .msg {
-        margin-top: 12px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-      .err { color: #b42318; }
-      .result {
-        margin-top: 16px;
-        white-space: pre-wrap;
+
+      textarea {
+        min-height: 14rem;
+        resize: vertical;
+        padding: 0.85rem 0.9rem;
         line-height: 1.45;
-        font-size: 14px;
       }
-      .paths {
-        margin-top: 12px;
-        font-size: 13px;
+
+      input {
+        height: 2.85rem;
+        padding: 0 0.85rem;
       }
-      .paths a {
+
+      textarea:focus,
+      input:focus {
+        border-color: #90c5b4;
+        box-shadow: 0 0 0 0.22rem rgba(14, 123, 95, 0.12);
+      }
+
+      .action-row {
+        margin-top: 0.75rem;
+        display: grid;
+        grid-template-columns: 1fr 9.5rem;
+        gap: 0.6rem;
+      }
+
+      button {
+        border: 0;
+        border-radius: 0.8rem;
+        background: linear-gradient(145deg, #0e7b5f, #0a6a51);
+        color: #fff;
+        font: inherit;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        cursor: pointer;
+        transition: transform 0.12s ease, filter 0.12s ease, opacity 0.15s ease;
+      }
+
+      button:hover {
+        filter: brightness(1.02);
+      }
+
+      button:active {
+        transform: translateY(1px);
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.92rem;
+        color: #1f2937;
+        min-height: 1.4rem;
+      }
+
+      .status.is-error {
+        color: var(--danger);
+      }
+
+      .status-pip {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 999px;
+        background: #9ca3af;
+      }
+
+      .status.is-ok .status-pip {
+        background: var(--brand);
+      }
+
+      .status.is-error .status-pip {
+        background: var(--danger);
+      }
+
+      .meta-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.55rem;
+      }
+
+      .meta-item {
+        border: 1px solid var(--soft);
+        border-radius: 0.7rem;
+        background: #fafcff;
+        padding: 0.6rem 0.7rem;
+      }
+
+      .meta-label {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+      }
+
+      .meta-value {
+        margin-top: 0.2rem;
+        font-size: 0.88rem;
+        line-height: 1.35;
+        color: #101827;
+        word-break: break-word;
+      }
+
+      .links {
+        display: grid;
+        gap: 0.4rem;
+      }
+
+      .link-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.6rem;
+        border: 1px solid var(--soft);
+        border-radius: 0.7rem;
+        background: #f9fcff;
+        padding: 0.55rem 0.65rem;
+        font-size: 0.84rem;
+      }
+
+      .link-row span {
+        color: #334155;
+        font-weight: 600;
+      }
+
+      .link-row a {
         color: #0b5ca8;
         text-decoration: none;
+        white-space: nowrap;
       }
-      .paths a:hover { text-decoration: underline; }
-      @media (max-width: 720px) {
-        .row { grid-template-columns: 1fr; }
+
+      .link-row a:hover {
+        text-decoration: underline;
+      }
+
+      pre {
+        margin: 0;
+        max-height: 26rem;
+        overflow: auto;
+        padding: 0.8rem;
+        border-radius: 0.8rem;
+        background: #0f172a;
+        color: #dbeafe;
+        border: 1px solid #111f38;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.82rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      @media (max-width: 980px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .shell {
+          width: min(1180px, 100% - 1rem);
+          margin: 1.2rem auto;
+        }
+
+        .topbar {
+          flex-direction: column;
+        }
+
+        .action-row {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <div class="panel">
-        <h1>ArticleReader</h1>
-        <p class="sub">Paste a link or raw HTML/text. Extraction is auto-saved to <strong>Extracted Articles</strong>.</p>
-
-        <label for="input">Link or content</label>
-        <textarea id="input" placeholder="https://... OR view-source:https://... OR paste full content"></textarea>
-
-        <label for="query">Relevance query (optional)</label>
-        <div class="row">
-          <input id="query" type="text" placeholder="fraud biometric policy" />
-          <button id="runBtn" type="button">Extract</button>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>ArticleReader</h1>
+          <p class="subtitle">Paste any link, `view-source:` URL, or raw content and get the main article instantly.</p>
         </div>
+        <div class="badge"><span class="dot" aria-hidden="true"></span>Serverless + Blob Ready</div>
+      </header>
 
-        <div id="msg" class="msg"></div>
-        <div id="paths" class="paths"></div>
-        <div id="result" class="result"></div>
-      </div>
-    </div>
+      <section class="grid">
+        <article class="card">
+          <div class="section">
+            <h2 class="card-title">Input</h2>
+            <p class="card-note">URL, `view-source:`, HTML, or plain text.</p>
+          </div>
+
+          <div class="section">
+            <label for="input">Link or Content</label>
+            <textarea id="input" placeholder="https://... OR view-source:https://... OR paste full content"></textarea>
+          </div>
+
+          <div class="section">
+            <label for="query">Relevance Query (Optional)</label>
+            <div class="action-row">
+              <input id="query" type="text" placeholder="fraud biometric policy" />
+              <button id="runBtn" type="button">Extract</button>
+            </div>
+          </div>
+
+          <div class="section">
+            <div id="msg" class="status"><span class="status-pip" aria-hidden="true"></span><span id="msgText"></span></div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="section">
+            <h2 class="card-title">Result</h2>
+            <p class="card-note">Metadata, save links, and a ranked article preview.</p>
+          </div>
+
+          <div class="section">
+            <div id="meta" class="meta-grid">
+              <div class="meta-item">
+                <div class="meta-label">Title</div>
+                <div class="meta-value">(none)</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Byline</div>
+                <div class="meta-value">(none)</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Source</div>
+                <div class="meta-value">(inline)</div>
+              </div>
+              <div class="meta-item">
+                <div class="meta-label">Paragraphs</div>
+                <div class="meta-value">0</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div id="paths" class="links"></div>
+          </div>
+
+          <div class="section">
+            <pre id="result">Run extraction to see ranked passages and article preview.</pre>
+          </div>
+        </article>
+      </section>
+    </main>
 
     <script>
       const inputEl = document.getElementById("input");
       const queryEl = document.getElementById("query");
       const runBtn = document.getElementById("runBtn");
       const msgEl = document.getElementById("msg");
+      const msgTextEl = document.getElementById("msgText");
+      const metaEl = document.getElementById("meta");
       const pathsEl = document.getElementById("paths");
       const resultEl = document.getElementById("result");
 
-      function setMsg(text, isErr) {
-        msgEl.textContent = text || "";
-        msgEl.className = isErr ? "msg err" : "msg";
+      function escapeHtml(raw) {
+        return String(raw || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function setMsg(text, kind) {
+        msgTextEl.textContent = text || "";
+        msgEl.className = "status";
+        if (kind === "error") msgEl.classList.add("is-error");
+        if (kind === "ok") msgEl.classList.add("is-ok");
+      }
+
+      function setBusy(isBusy) {
+        runBtn.disabled = isBusy;
+        runBtn.textContent = isBusy ? "Extracting..." : "Extract";
+      }
+
+      function setMeta({ title, byline, source, paragraphs }) {
+        metaEl.innerHTML = `
+          <div class="meta-item">
+            <div class="meta-label">Title</div>
+            <div class="meta-value">${escapeHtml(title || "(none)")}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Byline</div>
+            <div class="meta-value">${escapeHtml(byline || "(none)")}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Source</div>
+            <div class="meta-value">${escapeHtml(source || "(inline)")}</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Paragraphs</div>
+            <div class="meta-value">${escapeHtml(String(paragraphs || 0))}</div>
+          </div>
+        `;
+      }
+
+      function setPaths(saved) {
+        const rows = [];
+        if (saved && saved.textUrl) {
+          rows.push(
+            `<div class="link-row"><span>Text Output</span><a href="${escapeHtml(saved.textUrl)}" target="_blank" rel="noopener">${escapeHtml(saved.textName || "open")}</a></div>`
+          );
+        }
+        if (saved && saved.jsonUrl) {
+          rows.push(
+            `<div class="link-row"><span>JSON Output</span><a href="${escapeHtml(saved.jsonUrl)}" target="_blank" rel="noopener">${escapeHtml(saved.jsonName || "open")}</a></div>`
+          );
+        }
+        pathsEl.innerHTML = rows.join("");
       }
 
       async function run() {
         const input = String(inputEl.value || "").trim();
         const query = String(queryEl.value || "").trim();
         if (!input) {
-          setMsg("Paste a link or content first.", true);
+          setMsg("Paste a link or content first.", "error");
           return;
         }
 
-        runBtn.disabled = true;
-        setMsg("Extracting...", false);
-        resultEl.textContent = "";
-        pathsEl.innerHTML = "";
+        setBusy(true);
+        setMsg("Extracting article...", "ok");
+        setPaths({});
+        setMeta({ title: "(loading)", byline: "(loading)", source: "(loading)", paragraphs: "..." });
+        resultEl.textContent = "Working on extraction...";
 
         try {
           const res = await fetch("/api/extract", {
@@ -153,48 +479,41 @@
           const data = await res.json();
 
           if (!res.ok || !data.ok) {
-            setMsg(data.error || "Extraction failed.", true);
+            setMsg(data.error || "Extraction failed.", "error");
+            resultEl.textContent = "Extraction failed.";
             return;
           }
 
           const r = data.result || {};
-          setMsg(r.warning || "Extraction complete.", false);
+          setMsg(data.warning || r.warning || "Extraction complete.", "ok");
+          setMeta({
+            title: r.title || "(none)",
+            byline: r.byline || "(none)",
+            source: r.normalizedSource || r.source || "(inline)",
+            paragraphs: Number(r.paragraphCount || 0)
+          });
+          setPaths(data.saved || {});
 
-          const title = r.title || "(none)";
-          const byline = r.byline || "(none)";
-          const source = r.normalizedSource || r.source || "(inline)";
           const top = Array.isArray(r.relevantPassages) ? r.relevantPassages : [];
-          const topLines = top.slice(0, 4).map((p, i) => {
+          const topLines = top.slice(0, 5).map((p, i) => {
             const score = Number(p.score || 0).toFixed(4);
             const txt = String(p.text || "").replace(/\s+/g, " ").trim();
-            const small = txt.length > 260 ? txt.slice(0, 257) + "..." : txt;
+            const small = txt.length > 220 ? txt.slice(0, 217) + "..." : txt;
             return `${i + 1}. [${score}] ${small}`;
           });
 
           resultEl.textContent = [
-            `Title: ${title}`,
-            `Byline: ${byline}`,
-            `Source: ${source}`,
-            `Paragraphs: ${Number(r.paragraphCount || 0)}`,
-            "",
             "Top relevant passages:",
-            ...topLines,
+            ...(topLines.length ? topLines : ["(none)"]),
             "",
-            "Extracted article preview:",
-            String(r.articleText || "").slice(0, 2000)
+            "Article preview:",
+            String(r.articleText || "").slice(0, 2400)
           ].join("\n");
-
-          const saved = data.saved || {};
-          const txtUrl = saved.textUrl || "";
-          const jsonUrl = saved.jsonUrl || "";
-          pathsEl.innerHTML = [
-            txtUrl ? `Text: <a href="${txtUrl}" target="_blank" rel="noopener">${saved.textName || "open"}</a>` : "",
-            jsonUrl ? `JSON: <a href="${jsonUrl}" target="_blank" rel="noopener">${saved.jsonName || "open"}</a>` : ""
-          ].filter(Boolean).join("<br/>");
         } catch (err) {
-          setMsg(String(err && err.message ? err.message : "Network error"), true);
+          setMsg(String(err && err.message ? err.message : "Network error"), "error");
+          resultEl.textContent = "Request failed.";
         } finally {
-          runBtn.disabled = false;
+          setBusy(false);
         }
       }
 
