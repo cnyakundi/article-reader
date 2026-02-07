@@ -29,7 +29,11 @@ const CF_PY_BIN = path.join(CF_VENV_DIR, "bin", "python");
 const CF_FETCH_SCRIPT = path.join(PROJECT_ROOT, "src", "cf_fetch.py");
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36";
-const IS_VERCEL_RUNTIME = String(process.env.VERCEL || "").trim() === "1";
+const IS_VERCEL_RUNTIME = Boolean(
+  String(process.env.VERCEL || "").trim() ||
+    String(process.env.VERCEL_ENV || "").trim() ||
+    String(process.env.NOW_REGION || "").trim()
+);
 
 function normalizeInput(raw) {
   const text = String(raw || "").trim();

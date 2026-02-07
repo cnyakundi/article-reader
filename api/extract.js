@@ -74,9 +74,10 @@ export default async function handler(req, res) {
         textUrl: saved.textUrl || null
       },
       warning:
-        onVercel && saved.storage !== "blob"
+        saved.warning ||
+        (onVercel && saved.storage !== "blob"
           ? "No Blob token configured. Files are temporary in serverless runtime."
-          : null
+          : null)
     });
   } catch (err) {
     sendJson(res, 500, { ok: false, error: String(err?.message || err || "server_error") });
