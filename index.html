@@ -166,6 +166,56 @@
         gap: 0.6rem;
       }
 
+      .capture-box {
+        margin-top: 0.9rem;
+        border: 1px dashed #b9c8e1;
+        border-radius: 0.8rem;
+        background: #f8fbff;
+        padding: 0.75rem 0.8rem;
+      }
+
+      .capture-title {
+        margin: 0;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #2d415f;
+      }
+
+      .capture-note {
+        margin: 0.4rem 0 0;
+        color: #4c6182;
+        font-size: 0.86rem;
+        line-height: 1.45;
+      }
+
+      .capture-actions {
+        margin-top: 0.55rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+      }
+
+      .capture-link,
+      .capture-copy {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.6rem;
+        border: 1px solid #c4d4ee;
+        background: #ffffff;
+        color: #1f3f72;
+        text-decoration: none;
+        padding: 0.42rem 0.62rem;
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .capture-copy {
+        cursor: pointer;
+      }
+
       button {
         border: 0;
         border-radius: 0.8rem;
@@ -344,6 +394,14 @@
               <input id="query" type="text" placeholder="fraud biometric policy" />
               <button id="runBtn" type="button">Extract</button>
             </div>
+            <div class="capture-box">
+              <p class="capture-title">Browser Capture</p>
+              <p class="capture-note">If a link is blocked, use this bookmarklet on the article tab to send the real page source.</p>
+              <div class="capture-actions">
+                <a id="captureLink" class="capture-link" href="#">Send Page to ArticleReader</a>
+                <button id="copyCaptureBtn" class="capture-copy" type="button">Copy Bookmarklet</button>
+              </div>
+            </div>
           </div>
 
           <div class="section">
@@ -398,6 +456,8 @@
       const metaEl = document.getElementById("meta");
       const pathsEl = document.getElementById("paths");
       const resultEl = document.getElementById("result");
+      const captureLinkEl = document.getElementById("captureLink");
+      const copyCaptureBtnEl = document.getElementById("copyCaptureBtn");
 
       function escapeHtml(raw) {
         return String(raw || "")
@@ -413,6 +473,15 @@
         msgEl.className = "status";
         if (kind === "error") msgEl.classList.add("is-error");
         if (kind === "ok") msgEl.classList.add("is-ok");
+      }
+
+      function buildBookmarklet() {
+        const api = `${window.location.origin}/api/extract`;
+        const app = window.location.origin;
+        const code = `(async()=>{try{const api=${JSON.stringify(api)};const app=${JSON.stringify(
+          app
+        )};const html=document.documentElement.outerHTML;const query=(document.title||'').slice(0,120);const r=await fetch(api,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({input:html,query,top:6})});const d=await r.json();if(!r.ok||!d.ok){alert('ArticleReader failed: '+(d.error||r.status));return;}const lines=[];if(d.result&&d.result.title)lines.push('Title: '+d.result.title);if(d.saved&&d.saved.textUrl)lines.push('Text: '+d.saved.textUrl);if(d.saved&&d.saved.jsonUrl)lines.push('JSON: '+d.saved.jsonUrl);if(d.result&&d.result.warning)lines.push('Warning: '+d.result.warning);if(lines.length){prompt('ArticleReader result',lines.join('\\n'));}else{alert('Article extracted. Open ArticleReader to inspect.');}window.open(app,'_blank');}catch(e){alert('ArticleReader error: '+(e&&e.message?e.message:e));}})();`;
+        return `javascript:${code}`;
       }
 
       function setBusy(isBusy) {
@@ -520,6 +589,17 @@
       runBtn.addEventListener("click", run);
       queryEl.addEventListener("keydown", (e) => {
         if (e.key === "Enter") run();
+      });
+
+      const bookmarklet = buildBookmarklet();
+      captureLinkEl.href = bookmarklet;
+      copyCaptureBtnEl.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(bookmarklet);
+          setMsg("Bookmarklet copied. Save it as a browser bookmark.", "ok");
+        } catch {
+          setMsg("Copy failed. Drag the link button to your bookmarks bar.", "error");
+        }
       });
     </script>
   </body>

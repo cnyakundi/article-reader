@@ -9,8 +9,15 @@ import { EXTRACTED_DIR } from "./projectPaths.mjs";
 const PORT = Number(process.env.ARTICLE_READER_PORT || 4317);
 const INDEX_FILE = path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url))), "ui", "index.html");
 
+function applyCors(res) {
+  res.setHeader("access-control-allow-origin", "*");
+  res.setHeader("access-control-allow-methods", "POST, OPTIONS");
+  res.setHeader("access-control-allow-headers", "content-type");
+}
+
 function sendJson(res, status, payload) {
   const body = JSON.stringify(payload);
+  applyCors(res);
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
     "content-length": Buffer.byteLength(body)
@@ -118,6 +125,13 @@ async function handleFile(req, res, pathname) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://localhost:${PORT}`);
   const pathname = url.pathname;
+
+  if (req.method === "OPTIONS" && pathname === "/api/extract") {
+    applyCors(res);
+    res.writeHead(204);
+    res.end();
+    return;
+  }
 
   if (req.method === "GET" && pathname === "/health") {
     sendJson(res, 200, { ok: true });

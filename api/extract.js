@@ -1,9 +1,16 @@
 import { extractRelevantArticle } from "../src/extractor.mjs";
 import { saveExtractionResult } from "../src/saveOutput.mjs";
 
+function applyCors(res) {
+  res.setHeader("access-control-allow-origin", "*");
+  res.setHeader("access-control-allow-methods", "POST, OPTIONS");
+  res.setHeader("access-control-allow-headers", "content-type");
+}
+
 function sendJson(res, status, payload) {
   const body = JSON.stringify(payload);
   res.statusCode = status;
+  applyCors(res);
   res.setHeader("content-type", "application/json; charset=utf-8");
   res.setHeader("content-length", Buffer.byteLength(body));
   res.end(body);
@@ -29,6 +36,7 @@ async function readJsonBody(req, limit = 4 * 1024 * 1024) {
 
 export default async function handler(req, res) {
   if (req.method === "OPTIONS") {
+    applyCors(res);
     res.statusCode = 204;
     res.end();
     return;
