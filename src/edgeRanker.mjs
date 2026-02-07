@@ -91,6 +91,24 @@ export async function rankByRelevance({ query, candidates, topK = 5 }) {
   const edgeModel = String(process.env.ARTICLE_READER_EDGE_MODEL || "nomic-embed-text").trim();
   const edgeUrl = String(process.env.ARTICLE_READER_EDGE_URL || "http://127.0.0.1:11434").trim();
   const timeoutMs = Number(process.env.ARTICLE_READER_EDGE_TIMEOUT_MS || 5000);
+  const isVercelRuntime = String(process.env.VERCEL || "").trim() === "1";
+  const forceEdge = String(process.env.ARTICLE_READER_FORCE_EDGE || "").trim() === "1";
+
+  // Serverless environments do not have local Ollama. Skip edge calls unless explicitly forced.
+  if (isVercelRuntime && !forceEdge) {
+    const scored = items.map((text, index) => ({
+      index,
+      text,
+      score: termFrequencyScore(q, text)
+    }));
+    scored.sort((a, b) => b.score - a.score);
+    return {
+      method: "lexical-fallback",
+      model: null,
+      warning: "edge_disabled_on_vercel",
+      ranked: scored.slice(0, Math.max(1, topK))
+    };
+  }
 
   try {
     const qVec = await embedWithOllama(q, edgeModel, edgeUrl, timeoutMs);
