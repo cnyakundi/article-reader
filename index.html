@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ArticleReader</title>
+    <style>
+      :root {
+        --bg: #f4f6f8;
+        --panel: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --line: #dbe2ea;
+        --brand: #0a7f5a;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+        color: var(--text);
+        background: radial-gradient(circle at top right, #e7f5ef 0%, var(--bg) 50%);
+      }
+      .wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 28px 16px 40px;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 28px;
+      }
+      .sub {
+        color: var(--muted);
+        margin: 0 0 16px;
+        font-size: 14px;
+      }
+      label {
+        display: block;
+        margin: 10px 0 6px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      textarea, input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        background: #fff;
+      }
+      textarea { min-height: 92px; resize: vertical; }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 140px;
+        gap: 10px;
+      }
+      button {
+        border: none;
+        border-radius: 10px;
+        background: var(--brand);
+        color: #fff;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 10px 14px;
+        cursor: pointer;
+      }
+      button:disabled { opacity: .6; cursor: default; }
+      .msg {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .err { color: #b42318; }
+      .result {
+        margin-top: 16px;
+        white-space: pre-wrap;
+        line-height: 1.45;
+        font-size: 14px;
+      }
+      .paths {
+        margin-top: 12px;
+        font-size: 13px;
+      }
+      .paths a {
+        color: #0b5ca8;
+        text-decoration: none;
+      }
+      .paths a:hover { text-decoration: underline; }
+      @media (max-width: 720px) {
+        .row { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="panel">
+        <h1>ArticleReader</h1>
+        <p class="sub">Paste a link or raw HTML/text, then extract the main article body.</p>
+
+        <label for="input">Link or content</label>
+        <textarea id="input" placeholder="https://... OR view-source:https://... OR paste full content"></textarea>
+
+        <label for="query">Relevance query (optional)</label>
+        <div class="row">
+          <input id="query" type="text" placeholder="fraud biometric policy" />
+          <button id="runBtn" type="button">Extract</button>
+        </div>
+
+        <div id="msg" class="msg"></div>
+        <div id="paths" class="paths"></div>
+        <div id="result" class="result"></div>
+      </div>
+    </div>
+
+    <script>
+      const inputEl = document.getElementById("input");
+      const queryEl = document.getElementById("query");
+      const runBtn = document.getElementById("runBtn");
+      const msgEl = document.getElementById("msg");
+      const pathsEl = document.getElementById("paths");
+      const resultEl = document.getElementById("result");
+
+      function setMsg(text, isErr) {
+        msgEl.textContent = text || "";
+        msgEl.className = isErr ? "msg err" : "msg";
+      }
+
+      async function run() {
+        const input = String(inputEl.value || "").trim();
+        const query = String(queryEl.value || "").trim();
+        if (!input) {
+          setMsg("Paste a link or content first.", true);
+          return;
+        }
+
+        runBtn.disabled = true;
+        setMsg("Extracting...", false);
+        resultEl.textContent = "";
+        pathsEl.innerHTML = "";
+
+        try {
+          const res = await fetch("/api/extract", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ input, query, top: 6 })
+          });
+          const data = await res.json();
+
+          if (!res.ok || !data.ok) {
+            setMsg(data.error || "Extraction failed.", true);
+            return;
+          }
+
+          const r = data.result || {};
+          setMsg(data.warning || r.warning || "Extraction complete.", false);
+
+          const title = r.title || "(none)";
+          const byline = r.byline || "(none)";
+          const source = r.normalizedSource || r.source || "(inline)";
+          const top = Array.isArray(r.relevantPassages) ? r.relevantPassages : [];
+          const topLines = top.slice(0, 4).map((p, i) => {
+            const score = Number(p.score || 0).toFixed(4);
+            const txt = String(p.text || "").replace(/\s+/g, " ").trim();
+            const small = txt.length > 260 ? txt.slice(0, 257) + "..." : txt;
+            return `${i + 1}. [${score}] ${small}`;
+          });
+
+          resultEl.textContent = [
+            `Title: ${title}`,
+            `Byline: ${byline}`,
+            `Source: ${source}`,
+            `Paragraphs: ${Number(r.paragraphCount || 0)}`,
+            "",
+            "Top relevant passages:",
+            ...topLines,
+            "",
+            "Extracted article preview:",
+            String(r.articleText || "").slice(0, 2000)
+          ].join("\n");
+
+          const saved = data.saved || {};
+          const txtUrl = saved.textUrl || "";
+          const jsonUrl = saved.jsonUrl || "";
+          const links = [
+            txtUrl ? `Text: <a href="${txtUrl}" target="_blank" rel="noopener">${saved.textName || "open"}</a>` : "",
+            jsonUrl ? `JSON: <a href="${jsonUrl}" target="_blank" rel="noopener">${saved.jsonName || "open"}</a>` : ""
+          ].filter(Boolean);
+          pathsEl.innerHTML = links.join("<br/>");
+        } catch (err) {
+          setMsg(String(err && err.message ? err.message : "Network error"), true);
+        } finally {
+          runBtn.disabled = false;
+        }
+      }
+
+      runBtn.addEventListener("click", run);
+      queryEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") run();
+      });
+    </script>
+  </body>
+</html>

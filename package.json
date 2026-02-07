@@ -1,0 +1,20 @@
+{
+  "name": "article-reader-edge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Extract the main article from URLs or pasted content using deterministic parsing + local edge AI ranking.",
+  "scripts": {
+    "extract": "node src/cli.mjs",
+    "selftest": "node src/selftest.mjs",
+    "web": "node src/web.mjs"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.5.0",
+    "@vercel/blob": "^2.2.0",
+    "jsdom": "^24.1.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
